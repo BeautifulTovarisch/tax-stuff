@@ -7,6 +7,10 @@ W-2 Generator
 This program populates a form W-2 for purposes of practing tax returns. Wages
 are generated within the minimum amount to issue (e.g 600) and the threshold
 for the highest tax bracket (MFJ)
+
+TODO: Currently this assumes wages are equal to taxable income, which is clearly
+wrong. Need to incorporate other packages that properly adjust income to arrive
+at TI.
 """
 
 from math import floor
@@ -87,6 +91,17 @@ def _wage_and_wh():
     mdRates = [0.02, 0.03, 0.04, 0.0475, 0.05, 0.0525, 0.055, 0.0575]
     mdSchedule = [1000, 2000, 3000, 100_000, 125_000, 150_000, 250_000]
 
+    mdtaxtable2025 = {
+            0: lambda i: i * 0.02,
+            1000: lambda i: 20 + ((i - 1000) * 0.03),
+            2000: lambda i: 50 + ((i - 2000) * 0.04),
+            3000: lambda i: 90 + ((i - 3000) * 0.0475),
+            100_000: lambda i: 4697.50 + ((i - 100_000) * 0.05),
+            125_000: lambda i: 5947.50 + ((i - 125_000) * 0.0525),
+            150_000: lambda i: 7260.00 + ((i - 150_000) * 0.0550),
+            250_000: lambda i: 12760.00 + ((i - 250_000) * 0.0575)
+            }
+
     return {
         'topmostSubform[0].CopyB[0].Col_Right[0].Box1_ReadOrder[0].f2_09[0]': wages,
         'topmostSubform[0].CopyB[0].Col_Right[0].f2_10[0]': fed,
@@ -96,7 +111,7 @@ def _wage_and_wh():
         'topmostSubform[0].CopyB[0].Col_Right[0].f2_14[0]': _trunc(med),
 
         'topmostSubform[0].CopyB[0].Box16_ReadOrder[0].f2_33[0]': wages,
-        'topmostSubform[0].CopyB[0].Box17_ReadOrder[0].f2_35[0]': _trunc(figureTax(wages, mdSchedule, mdRates)),
+        'topmostSubform[0].CopyB[0].Box17_ReadOrder[0].f2_35[0]': _trunc(figureTax(wages, mdtaxtable2025)),
         'topmostSubform[0].CopyB[0].Box18_ReadOrder[0].f2_37[0]': wages,
         'topmostSubform[0].CopyB[0].Box19_ReadOrder[0].f2_39[0]': _trunc(wages * 0.0320),
         }
