@@ -28,7 +28,71 @@ schedule2025 = [11925,
 
 fedRates = [0.10, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37]
 
-def figureTax(income, schedule=schedule2025, rates=fedRates):
+# TODO. This table should be easy to compute given the brackets and rates
+taxtable2025 = {
+        0: lambda i: i * 0.10,
+        11_925: lambda i: 1192.50 + ((i - 11_925) * 0.12),
+        48_475: lambda i: 5578.50 + ((i - 48_475) * 0.22),
+        103_350: lambda i: 17651.00 + ((i - 103_350) * 0.24),
+        197_300: lambda i: 40199.00 + ((i - 197_300) * 0.32),
+        250_525: lambda i: 57231.00 + ((i - 250_525) * 0.35),
+        626_350: lambda i: 188769.75 + ((i - 626_350) * 0.37)
+        }
+
+mdtaxtable2025 = {
+        0: lambda i: i * 0.02,
+        1000: lambda i: 20 + ((i - 1000) * 0.03),
+        2000: lambda i: 50 + ((i - 2000) * 0.04),
+        3000: lambda i: 90 + ((i - 3000) * 0.0475),
+        100_000: lambda i: 4697.50 + ((i - 100_000) * 0.05),
+        125_000: lambda i: 5947.50 + ((i - 125_000) * 0.0525),
+        150_000: lambda i: 7260.00 + ((i - 150_000) * 0.0550),
+        250_000: lambda i: 12760.00 + ((i - 250_000) * 0.0575)
+        }
+
+def _compute_tax_schedule(schedule, rates):
+    return {}
+
+# Straightforward implementation used for testing. Works for all taxable income.
+def _oracle(income, schedule=schedule2025, rates=fedRates):
+    if income < 0:
+        raise ValueError('income must be nonnegative')
+
+    if len(schedule) > len(rates):
+        raise ValueError('bracket boundaries may not exceed number of tax brackets')
+
+    if not schedule:
+        return 0.0
+
+    # If the schedule isn't sorted, the income bounds will be completely wrong
+    sched = sorted(schedule)
+
+    brackets = [sched[0]] + [sched[i] - sched[i-1] for i in range(1, len(sched))]
+
+    tax = 0.0
+    for (bracket, rate) in zip(brackets, rates):
+        taxedIncome = max(min(income, bracket), 0.0)
+        tax += taxedIncome * rate
+
+        income -= taxedIncome
+
+    # Handle the final tax bracket, if any income is left over.
+    return tax + (income * rates[-1])
+
+# Compute tax using lookup tables and a formula. Consistent with how actual tax
+# preparers would compute tax for taxable income over $100,000. The keys in the
+# taxtable represent the brackets, and the corresponding value computes the tax
+# according to the formula found in the instructions for the 1040.
+def _tax_schedule(income, taxtable=taxtable2025):
+    bracket = 0.0
+    for k in taxtable:
+        # Supremum
+        if income > k:
+            bracket = max(bracket, k)
+
+    return taxtable[bracket](income)
+
+def figureTax(income, taxtable=taxtable2025):
     """
     figureTax computes the tax on `income` by applying the `schedule`.
 
@@ -70,37 +134,14 @@ def figureTax(income, schedule=schedule2025, rates=fedRates):
     ValueError: income must be nonnegative
     """
 
-    if income < 0:
-        raise ValueError('income must be nonnegative')
-
-    if len(schedule) > len(rates):
-        raise ValueError('bracket boundaries may not exceed number of tax brackets')
-
-    if not schedule:
-        return 0.0
-
-    # If the schedule isn't sorted, the income bounds will be completely wrong
-    sched = sorted(schedule)
-
-    brackets = [sched[0]] + [sched[i] - sched[i-1] for i in range(1, len(sched))]
-
-    tax = 0.0
-    for (bracket, rate) in zip(brackets, rates):
-        taxedIncome = max(min(income, bracket), 0.0)
-        tax += taxedIncome * rate
-
-        income -= taxedIncome
-
-    # Handle the final tax bracket, if any income is left over.
-    return tax + (income * rates[-1])
+    return _tax_schedule(income, taxtable)
 
 if __name__ == "__main__":
     income = input('Please enter your taxable income: ')
 
-    print('federal\t', figureTax(float(income), schedule2025))
-
     mdRates = [0.02, 0.03, 0.04, 0.0475, 0.05, 0.0525, 0.055, 0.0575]
     mdSchedule = [1000, 2000, 3000, 100_000, 125_000, 150_000, 250_000]
 
-    print('state\t', figureTax(float(income), mdSchedule, mdRates))
-    print('local\t', float(income) * 0.0320)
+    print(f'federal\t {figureTax(float(income)):20}')
+    print(f'state\t {figureTax(float(income), mdtaxtable2025):20}')
+    print(f'local\t {(float(income) * 0.0320):20}')
