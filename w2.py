@@ -9,6 +9,7 @@ are generated within the minimum amount to issue (e.g 600) and the threshold
 for the highest tax bracket (MFJ)
 """
 
+from math import floor
 from random import randint
 
 from pypdf import PdfReader, PdfWriter
@@ -28,6 +29,16 @@ def _fica(wages):
     medicare = wages * 0.0145 + max(wages - 200_000, 0) * 0.009
 
     return (ss, medicare)
+
+# keep [places] digits after the decimal point
+def _trunc(figure, places=2):
+    factor = 10 ** places
+
+    return floor(figure * factor) / factor
+
+# Used only for the unusual states of '/Off' and '/1' in Box 13
+def _onoff():
+    return '/1' if randint(0, 1) else '/Off'
 
 # Fields are consistent across copies and follow the <parent>.<child> format
 # described in the PDF specification.
@@ -59,7 +70,7 @@ defaultValues = {
         'Col_Right[0].Statutory_ReadOrder[0].c2_2[0]': '/Off',                  # Box 13
         'Col_Right[0].Retirement_ReadOrder[0].c2_3[0]': '/1',
 
-        'Boxes15_ReadOrder[0].Box15_ReadOrder[0].f2_29[0]': 'TN',               # State
+        'Boxes15_ReadOrder[0].Box15_ReadOrder[0].f2_29[0]': 'MD',               # State
         'Box16_ReadOrder[0].f2_33[0]': 100000,                                  # State Wages
         'Box17_ReadOrder[0].f2_35[0]': 8000,                                    # State Tax
         'Box18_ReadOrder[0].f2_37[0]': 100000,                                  # Local Wages
@@ -69,7 +80,7 @@ defaultValues = {
 # Randomize wages and compute withholding to put on form W-2
 def _wage_and_wh():
     wages = _rdmWages()
-    fed = figureTax(wages)
+    fed = _trunc(figureTax(wages))
     ss, med = _fica(wages)
 
     # TODO: Handle different states
@@ -80,14 +91,14 @@ def _wage_and_wh():
         'topmostSubform[0].CopyB[0].Col_Right[0].Box1_ReadOrder[0].f2_09[0]': wages,
         'topmostSubform[0].CopyB[0].Col_Right[0].f2_10[0]': fed,
         'topmostSubform[0].CopyB[0].Col_Right[0].Box3_ReadOrder[0].f2_11[0]': wages,
-        'topmostSubform[0].CopyB[0].Col_Right[0].f2_12[0]': ss,
+        'topmostSubform[0].CopyB[0].Col_Right[0].f2_12[0]': _trunc(ss),
         'topmostSubform[0].CopyB[0].Col_Right[0].Box5_ReadOrder[0].f2_13[0]': wages,
-        'topmostSubform[0].CopyB[0].Col_Right[0].f2_14[0]': med,
+        'topmostSubform[0].CopyB[0].Col_Right[0].f2_14[0]': _trunc(med),
 
         'topmostSubform[0].CopyB[0].Box16_ReadOrder[0].f2_33[0]': wages,
-        'topmostSubform[0].CopyB[0].Box17_ReadOrder[0].f2_35[0]': figureTax(wages, mdSchedule, mdRates),
+        'topmostSubform[0].CopyB[0].Box17_ReadOrder[0].f2_35[0]': _trunc(figureTax(wages, mdSchedule, mdRates)),
         'topmostSubform[0].CopyB[0].Box18_ReadOrder[0].f2_37[0]': wages,
-        'topmostSubform[0].CopyB[0].Box19_ReadOrder[0].f2_39[0]': wages * 0.0320,
+        'topmostSubform[0].CopyB[0].Box19_ReadOrder[0].f2_39[0]': _trunc(wages * 0.0320),
         }
 
 if __name__ == "__main__":
@@ -97,6 +108,7 @@ if __name__ == "__main__":
 
     wage_info = _wage_and_wh()
     values = { f'topmostSubform[0].CopyB[0].{field}': value for field, value in defaultValues.items() } | wage_info
+    values['topmostSubform[0].CopyB[0].Col_Right[0].Retirement_ReadOrder[0].c2_3[0]'] = _onoff()
 
     writer.update_page_form_field_values(None, values, auto_regenerate=False)
 
