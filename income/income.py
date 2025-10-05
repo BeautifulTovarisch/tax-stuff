@@ -20,7 +20,7 @@ def _taxable_adoption_benefits():
 def _taxable_ss():
     return 0
 
-def totalIncome():
+def totalIncome(income):
     """
     totalIncome computes the total income (line 9) of the taxpayer:
         - Wages
@@ -33,6 +33,13 @@ def totalIncome():
         - Taxable Social Security Benefits
         - Capital Gain or Loss
         - Additional Income from Schedule 1
+
+    Input:
+        income (dict): A dictionary whose keys correspond to lines on the 1040
+        and whose values indicate the value recorded on that line.
+
+    Output:
+        The total income reported on line 9 of the 1040
     """
     return 0
 
