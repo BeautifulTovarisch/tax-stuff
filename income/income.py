@@ -4,58 +4,65 @@
 """
 Income
 
-This module gathers sources of income found on the 1040 and computes AGI and
-taxable income. When run as a script, the program will attempt to read from
-various forms (1099, W-2, etc.) to automatically gather this information.
+This package contains functions that compute taxable portions of various income
+sources (such as Social Security) and other information needed to populate the
+Income section of the 1040. The client program is responsible for figuring the
+adjusted gross income and taxable income.
 """
 
-# 2441 line 26
-def _taxable_dep_care():
-    return 0
-
-def _taxable_adoption_benefits():
-    return 0
-
-# Line 6b. Use SS worksheet
-def _taxable_ss():
-    return 0
-
-def totalIncome(income):
+def taxable_dep_care(benefits, expenses):
     """
-    totalIncome computes the total income (line 9) of the taxpayer:
-        - Wages
-        - Adoption Benefits
-        - Taxable dependent care benefits
-        - Taxable Interest
-        - Ordinary Dividends
-        - IRA Distributions
-        - Pension Distributions
-        - Taxable Social Security Benefits
-        - Capital Gain or Loss
-        - Additional Income from Schedule 1
+    taxable_dep_care computes the amount of dependent care benefits that are
+    subject to income tax. This information is reported on Part III of form 2441
+    on line 26.
 
-    Input:
-        income (dict): A dictionary whose keys correspond to lines on the 1040
-        and whose values indicate the value recorded on that line.
-
-    Output:
-        The total income reported on line 9 of the 1040
+    The amount of dependent care benefits provided to the employee can be found
+    on form W-2 box 10.
     """
     return 0
 
-# Compute Schedule 1 line 26
-def adjustedGrossIncome():
-    """
-    adjustedGrossIncome computes the AGI (line 11) by subtracting adjustments
-    to income from the taxpayer's total income (line 9).
-    """
+def taxable_adoption_benefits():
     return 0
 
-def taxableIncome(agi, deduction):
+def taxable_ss(income, filingStatus):
     """
-    taxableIncome computes the taxable income (line 15) of the taxpayer. The
-    deductions from Schedule A are compared against the standard deduction for
-    the given filing status and the greater is chosen automatically.
+    taxable_ss computes the taxable portion of social security benefits using
+    income information from the 1040 and Schedule 1. This information is given
+    as a dictionary of the following form:
+
+    {
+        <form>: {
+            <line>: <value>
+        }
+    }
+
+    for example:
+
+    {
+        'SSA-1099': {
+            'Box5': 42000
+        },
+        '1040': {
+            '1z': 20000
+        }
+    }
+
+    This is more structure than strictly necessary, but makes the relationship
+    to the Social Security Benefits Worksheet found in the 1040 instructions a
+    bit clearer.
+
+    Input
+        income dict(string) float: A dictionary containing the relevant income
+        information needed to compute the taxable portion of SS benefits.
+
+    Output
+        The taxable portion of Social Security benefits
+
+
+    Examples
+
+    >>> taxable_ss({ 'SSA-1099': 65000 }, 'S')
+    0
     """
     return 0
 

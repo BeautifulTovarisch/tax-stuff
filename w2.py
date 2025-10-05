@@ -18,7 +18,7 @@ from random import randint
 
 from pypdf import PdfReader, PdfWriter
 
-from figure.tax_schedule import figureTax
+from taxcredits.tax_schedule import figureTax
 
 writer = PdfWriter()
 
